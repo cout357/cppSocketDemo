@@ -1,8 +1,21 @@
 #include<iostream>
-#include<winsock2.h>
-#include<windows.h>
-#include<memory>
 #include<cstring>
+#ifdef _WIN32
+
+#include<winsock2.h>
+
+#else
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/types.h>
+#include <netdb.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+typedef int SOCKET;
+
+#endif
 
 using namespace std;
 
