@@ -19,33 +19,6 @@ typedef int SOCKET;
 
 using namespace std;
 
-//UTF-8转GB2312
-char* U2G(const char* utf8){
-	int len = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
-	wchar_t* wstr = new wchar_t[len+1];
-	memset(wstr, 0, len+1);
-	MultiByteToWideChar(CP_UTF8, 0, utf8, -1, wstr, len);
-	len = WideCharToMultiByte(CP_ACP, 0, wstr, -1, NULL, 0, NULL, NULL);
-	char* str = new char[len+1];
-	memset(str, 0, len+1);
-	WideCharToMultiByte(CP_ACP, 0, wstr, -1, str, len, NULL, NULL);
-	if(wstr) delete[] wstr;
-	return str;
-}
-//GB2312转UTF-8
-char* G2U(const char* gb2312){
-	int len = MultiByteToWideChar(CP_ACP, 0, gb2312, -1, NULL, 0);
-	wchar_t* wstr = new wchar_t[len+1];
-	memset(wstr, 0, len+1);
-	MultiByteToWideChar(CP_ACP, 0, gb2312, -1, wstr, len);
-	len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
-	char* str = new char[len+1];
-	memset(str, 0, len+1);
-	WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, len, NULL, NULL);
-	if(wstr) delete[] wstr;
-	return str;
-}
-
 sockaddr GetSockAddr(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint16_t inPort){
 	sockaddr addr;
 	sockaddr_in *addrin = reinterpret_cast<sockaddr_in*>(&addr);
@@ -61,14 +34,20 @@ sockaddr GetSockAddr(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4, uint16_t in
 
 
 int main(){
+#ifdef _WIN32
 	WSADATA wsd;
 	if(WSAStartup(MAKEWORD(2, 2), &wsd)){
 		std::cout << "WSAStartup Error" << std::endl;
 		return -1;
 	}
+#endif
 	SOCKET tcpSocket = socket(AF_INET, SOCK_STREAM, 0);
 	//修改为服务器IP
 	sockaddr serverAddr = GetSockAddr(127, 0, 0, 1, 50002);
+
+#ifndef _WIN32
+	unsigned
+#endif
 	int serverAddrLen = sizeof(sockaddr);
 	if(connect(tcpSocket, &serverAddr, serverAddrLen) == -1){
 		std::cout << "connect Error!" << std::endl;
@@ -86,12 +65,12 @@ int main(){
 				std::cout << "正在关闭连接..." << std::endl;
 				break;
 			}
-			char *sendBuf_UTF8 = G2U(sendBuf);
+			char *sendBuf_UTF8 = sendBuf;
 			send(tcpSocket, sendBuf_UTF8, strlen(sendBuf_UTF8), 0);
 			memset(sendBuf, 0, BufMaxLen);
 			int ret = recv(tcpSocket, buf, BufMaxLen, 0);
 			if(ret > 0){
-				std::cout << "从服务器接收到回应：" << U2G(buf) << std::endl;
+				std::cout << "从服务器接收到回应：" << buf << std::endl;
 				memset(buf, 0, BufMaxLen);
 			}
 			std::cout << ">>> ";
@@ -99,9 +78,12 @@ int main(){
 	}
 	
 	
-	shutdown(tcpSocket, SB_BOTH);
+#ifdef _WIN32
 	closesocket(tcpSocket);
 	WSACleanup();
+#else
+	close(tcpSocket);
+#endif
 	std::cout << "已关闭客户端Socket..." << std::endl;
 	
 	return 0;
