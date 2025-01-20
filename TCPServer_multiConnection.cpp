@@ -50,6 +50,7 @@ void linkClientThread(SOCKET linkSocket, unsigned int linkId){
 }
 
 int main(){
+    printf("ProjectPath=[%s]\n", __FILE__);
 #ifdef _WIN32
 	WSADATA wsd;
 	if(WSAStartup(MAKEWORD(2, 2), &wsd)){
